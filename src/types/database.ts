@@ -4,6 +4,11 @@ export interface ExtractedField {
   confidence: number;
 }
 
+export interface ExtractedRow {
+  row_index: number;
+  fields: ExtractedField[];
+}
+
 export interface DatabaseUpload {
   id: string;
   file_name: string;
@@ -15,7 +20,9 @@ export interface DatabaseUpload {
   uploaded_at: string;
   submitted_by: string;
   extracted_data: {
-    fields: ExtractedField[];
+    headerFields: ExtractedField[];
+    rows: ExtractedRow[];
+    totalWorkers: number;
     processingTime?: number;
     model?: string;
   } | null;

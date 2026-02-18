@@ -204,8 +204,39 @@ export default {
           );
         }
 
-        const fieldList = fieldDefinitions.map((f) => `- ${f.label} (${f.type})`).join('\n');
-        const prompt = `Extract data from this handwritten form. The form contains these fields:\n${fieldList}\n\nFor each field return a JSON object with:\n{ field_name: string, extracted_value: string or null, confidence: number 0-1 }\n\nIf a field is completely unreadable, set extracted_value to null and confidence to 0.\nReturn a JSON array only. No markdown, no explanation.`;
+        const prompt = `You are extracting data from a photographed EIC (Electrical Industrial Co.) crew sign-in sheet.
+
+FORM LAYOUT:
+- Top-left: Foreman's name (handwritten)
+- Top-right: Date in MM-DD-YY format
+- Table columns: Name | ID# | Time In (AM) | Signature | Time Out (PM) | Signature
+
+INSTRUCTIONS:
+1. Extract the foreman name from the top-left of the form
+2. Extract the date from the top-right of the form. Convert to YYYY-MM-DD format.
+3. For EVERY row that has handwritten content, extract: worker name, ID number, time in, time out
+4. Skip completely blank rows
+5. Skip the signature columns (we don't need those)
+6. If Time Out (PM) column is empty for a row, set it to null — this just means the worker hasn't checked out yet
+7. Read ID numbers character by character — distinguish between 0/O, 1/l, 5/S, 6/G, 8/B
+8. Names are often Spanish — preserve accents and correct spelling where clear (e.g., "Rodriguez" not "Rodrigez")
+9. Time values should be in HH:MM format (e.g., "7:00", "6:00", "15:30")
+
+Return ONLY a JSON object in this exact structure:
+{
+  "foreman_name": "string",
+  "date": "YYYY-MM-DD",
+  "rows": [
+    {
+      "worker_name": "string",
+      "worker_id": "string",
+      "time_in": "string or null",
+      "time_out": "string or null"
+    }
+  ]
+}
+
+No markdown, no explanation, just the JSON object.`;
 
         const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
@@ -249,14 +280,14 @@ export default {
         const anthropicData = await anthropicResponse.json();
         const textContent = anthropicData.content?.find((c) => c.type === 'text')?.text || '';
 
-        let extractedFields;
+        let parsed;
         try {
-          extractedFields = JSON.parse(textContent);
+          parsed = JSON.parse(textContent);
         } catch (e) {
-          const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+          const jsonMatch = textContent.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             try {
-              extractedFields = JSON.parse(jsonMatch[0]);
+              parsed = JSON.parse(jsonMatch[0]);
             } catch (e2) {
               return new Response(
                 JSON.stringify({ success: false, error: 'Could not parse extraction results. The form may be unclear — try re-uploading a clearer photo.' }),
@@ -271,9 +302,33 @@ export default {
           }
         }
 
+        const headerFields = [
+          { field_name: 'foreman_name', extracted_value: parsed.foreman_name || null, confidence: parsed.foreman_name ? 0.9 : 0 },
+          { field_name: 'date', extracted_value: parsed.date || null, confidence: parsed.date ? 0.9 : 0 },
+        ];
+
+        const extractedRows = (parsed.rows || []).map((row, idx) => ({
+          row_index: idx,
+          fields: [
+            { field_name: 'worker_name', extracted_value: row.worker_name || null, confidence: row.worker_name ? 0.85 : 0 },
+            { field_name: 'worker_id', extracted_value: row.worker_id || null, confidence: row.worker_id ? 0.85 : 0 },
+            { field_name: 'time_in', extracted_value: row.time_in || null, confidence: row.time_in ? 0.85 : 0 },
+            { field_name: 'time_out', extracted_value: row.time_out || null, confidence: row.time_out ? 0.7 : 0 },
+          ],
+        }));
+
         const processingTime = Date.now() - startTime;
         return new Response(
-          JSON.stringify({ success: true, data: { fields: extractedFields, processingTime, model: 'claude-sonnet-4-20250514' } }),
+          JSON.stringify({
+            success: true,
+            data: {
+              headerFields,
+              rows: extractedRows,
+              totalWorkers: extractedRows.length,
+              processingTime,
+              model: 'claude-sonnet-4-20250514',
+            },
+          }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (error) {
@@ -288,11 +343,11 @@ export default {
     if (url.pathname === '/api/sheets/append' && request.method === 'POST') {
       try {
         const body = await request.json();
-        const { data, submittedBy, uploadId, fileName } = body;
+        const { headerData, rows, submittedBy, uploadId, fileName } = body;
 
-        if (!data || !submittedBy) {
+        if (!headerData || !rows || !submittedBy) {
           return new Response(
-            JSON.stringify({ success: false, error: 'Missing required fields: data, submittedBy' }),
+            JSON.stringify({ success: false, error: 'Missing required fields: headerData, rows, submittedBy' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
@@ -301,13 +356,22 @@ export default {
         const sheetId = env.GOOGLE_SHEET_ID;
         const recordsTab = env.RECORDS_TAB || 'Records';
         const uploadLogTab = env.UPLOAD_LOG_TAB || 'Upload Log';
-        const fieldOrder = (env.FIELD_ORDER || '').split(',').map((f) => f.trim()).filter(Boolean);
 
         const timestamp = new Date().toISOString();
-        const fieldValues = fieldOrder.map((f) => data[f] ?? '');
-        const recordRow = [timestamp, ...fieldValues, submittedBy, 'Approved'];
 
-        const appendResult = await sheetsAppend(accessToken, sheetId, recordsTab, [recordRow]);
+        const sheetRows = rows.map(row => [
+          timestamp,
+          headerData.foreman_name || '',
+          headerData.date || '',
+          row.worker_name || '',
+          row.worker_id || '',
+          row.time_in || '',
+          row.time_out || '',
+          submittedBy,
+          'Approved',
+        ]);
+
+        const appendResult = await sheetsAppend(accessToken, sheetId, recordsTab, sheetRows);
         const updatedRange = appendResult.updates?.updatedRange || '';
         const rowMatch = updatedRange.match(/(\d+)$/);
         const rowNumber = rowMatch ? parseInt(rowMatch[1], 10) : null;

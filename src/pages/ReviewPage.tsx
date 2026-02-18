@@ -7,7 +7,7 @@ import { ImageViewer } from '../components/review/ImageViewer';
 import { ExtractedFieldCard } from '../components/review/ExtractedFieldCard';
 import { ReviewActions } from '../components/review/ReviewActions';
 import { ReviewQueue } from '../components/review/ReviewQueue';
-import { fieldDefinitions } from '../config/fields';
+import { headerFields, rowFields } from '../config/fields';
 import { appendToSheet } from '../services/api';
 
 export default function ReviewPage() {
@@ -45,13 +45,22 @@ export default function ReviewPage() {
       if (demoMode) {
         sheetRowNumber = Math.floor(Math.random() * 900) + 100;
       } else {
-        const fieldData: Record<string, string> = {};
-        activeUpload.extractedData?.fields.forEach((f) => {
-          fieldData[f.field_name] = f.extracted_value ?? '';
+        const headerData: Record<string, string> = {};
+        activeUpload.extractedData?.headerFields.forEach((f) => {
+          headerData[f.field_name] = f.extracted_value ?? '';
+        });
+
+        const rows = (activeUpload.extractedData?.rows || []).map((row) => {
+          const rowData: Record<string, string> = {};
+          row.fields.forEach((f) => {
+            rowData[f.field_name] = f.extracted_value ?? '';
+          });
+          return rowData;
         });
 
         const result = await appendToSheet(
-          fieldData,
+          headerData,
+          rows,
           activeUpload.submittedBy,
           activeUpload.id,
           activeUpload.fileName
@@ -61,7 +70,7 @@ export default function ReviewPage() {
       }
 
       await approveUpload(activeUpload.id, sheetRowNumber);
-      addToast('Record saved to sheet', 'success');
+      addToast(`${activeUpload.extractedData?.totalWorkers || 0} worker records saved to sheet`, 'success');
 
       if (activeIndex < pendingReviews.length - 1) {
         setActiveIndex(activeIndex);
@@ -122,9 +131,9 @@ export default function ReviewPage() {
     }
   };
 
-  const handleFieldChange = (fieldName: string, newValue: string) => {
+  const handleFieldChange = (fieldName: string, newValue: string, rowIndex?: number) => {
     if (!activeUpload) return;
-    updateExtractedField(activeUpload.id, fieldName, newValue);
+    updateExtractedField(activeUpload.id, fieldName, newValue, rowIndex);
   };
 
   const handleSelectUpload = (id: string) => {
@@ -206,23 +215,61 @@ export default function ReviewPage() {
 
         <div className="flex-1 flex flex-col lg:w-1/2">
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            <div className="bg-white rounded-2xl shadow-lg p-4 space-y-3">
-              {fieldDefinitions.map((field) => {
-                const extractedField = activeUpload?.extractedData?.fields.find(
-                  (f) => f.field_name === field.name
-                );
+            <div className="bg-white rounded-2xl shadow-lg p-4 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 mb-2">Form Header</h3>
+                <div className="space-y-2">
+                  {headerFields.map((field) => {
+                    const extractedField = activeUpload?.extractedData?.headerFields.find(
+                      (f) => f.field_name === field.name
+                    );
 
-                return (
-                  <ExtractedFieldCard
-                    key={field.name}
-                    label={field.label}
-                    fieldName={field.name}
-                    value={extractedField?.extracted_value || null}
-                    confidence={extractedField?.confidence || null}
-                    onChange={handleFieldChange}
-                  />
-                );
-              })}
+                    return (
+                      <ExtractedFieldCard
+                        key={field.name}
+                        label={field.label}
+                        fieldName={field.name}
+                        value={extractedField?.extracted_value || null}
+                        confidence={extractedField?.confidence || null}
+                        onChange={(fieldName, value) => handleFieldChange(fieldName, value)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                  Workers ({activeUpload?.extractedData?.totalWorkers || 0})
+                </h3>
+                <div className="space-y-3">
+                  {(activeUpload?.extractedData?.rows || []).map((row) => (
+                    <div key={row.row_index} className="border border-slate-200 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-slate-500">
+                          Worker #{row.row_index + 1}
+                        </span>
+                      </div>
+                      {rowFields.map((field) => {
+                        const extractedField = row.fields.find(
+                          (f) => f.field_name === field.name
+                        );
+
+                        return (
+                          <ExtractedFieldCard
+                            key={`${row.row_index}-${field.name}`}
+                            label={field.label}
+                            fieldName={field.name}
+                            value={extractedField?.extracted_value || null}
+                            confidence={extractedField?.confidence || null}
+                            onChange={(fieldName, value) => handleFieldChange(fieldName, value, row.row_index)}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <p className="text-xs text-slate-400 mt-4">
                 Tap any field to edit. Low-confidence fields are highlighted.

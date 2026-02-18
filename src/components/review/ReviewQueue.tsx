@@ -79,9 +79,16 @@ export function ReviewQueue({
                 </div>
               ) : (
                 <>
-                  <span className="text-sm font-medium whitespace-nowrap">
-                    {index + 1}. {upload.fileName}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium whitespace-nowrap">
+                      {index + 1}. {upload.fileName}
+                    </span>
+                    {upload.extractedData && (
+                      <span className="text-xs text-slate-500">
+                        {upload.extractedData.totalWorkers || 0} workers
+                      </span>
+                    )}
+                  </div>
                   <button
                     onClick={(e) => handleDeleteClick(e, upload.id)}
                     className={`

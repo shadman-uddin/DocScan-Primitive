@@ -53,7 +53,15 @@ export default function RecentUploads() {
                   {upload.fileName}
                 </p>
                 <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
-                  {formatRelativeTime(upload.uploadedAt)}
+                  {upload.extractedData ? (
+                    <>
+                      {upload.extractedData.headerFields?.find((f) => f.field_name === "foreman_name")?.extracted_value || "N/A"} |{" "}
+                      {upload.extractedData.headerFields?.find((f) => f.field_name === "date")?.extracted_value || "N/A"} |{" "}
+                      {upload.extractedData.totalWorkers || 0} workers
+                    </>
+                  ) : (
+                    formatRelativeTime(upload.uploadedAt)
+                  )}
                 </p>
               </div>
 

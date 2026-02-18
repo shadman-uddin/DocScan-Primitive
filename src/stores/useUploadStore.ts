@@ -15,6 +15,11 @@ export interface ExtractedField {
   confidence: number;
 }
 
+export interface ExtractedRow {
+  row_index: number;
+  fields: ExtractedField[];
+}
+
 export interface Upload {
   id: string;
   fileName: string;
@@ -26,7 +31,9 @@ export interface Upload {
   uploadedAt: string;
   submittedBy: string;
   extractedData: {
-    fields: ExtractedField[];
+    headerFields: ExtractedField[];
+    rows: ExtractedRow[];
+    totalWorkers: number;
     processingTime?: number;
     model?: string;
   } | null;
@@ -61,7 +68,9 @@ interface UploadState {
   getPendingReviews: () => Upload[];
   approveUpload: (id: string, sheetRowNumber?: number | null) => Promise<void>;
   rejectUpload: (id: string) => Promise<void>;
-  updateExtractedField: (uploadId: string, fieldName: string, newValue: string) => void;
+  updateExtractedField: (uploadId: string, fieldName: string, newValue: string, rowIndex?: number) => void;
+  addExtractedRow: (uploadId: string) => void;
+  removeExtractedRow: (uploadId: string, rowIndex: number) => void;
   setDemoMode: (enabled: boolean) => void;
   submitUpdateRequest: (uploadId: string, description: string, requestedBy?: string) => Promise<void>;
   getUpdateRequestForUpload: (uploadId: string) => UpdateRequest | undefined;
@@ -184,25 +193,88 @@ export const useUploadStore = create<UploadState>()((set, get) => ({
     }
   },
 
-  updateExtractedField: (uploadId: string, fieldName: string, newValue: string) => {
+  updateExtractedField: (uploadId: string, fieldName: string, newValue: string, rowIndex?: number) => {
     set((state) => ({
       uploads: state.uploads.map((u) => {
         if (u.id !== uploadId) return u;
 
-        const existingData = u.extractedData ?? { fields: [] };
-        const fieldExists = existingData.fields.some((f) => f.field_name === fieldName);
+        const existingData = u.extractedData ?? { headerFields: [], rows: [], totalWorkers: 0 };
 
-        const updatedFields = fieldExists
-          ? existingData.fields.map((f) =>
-              f.field_name === fieldName ? { ...f, extracted_value: newValue } : f
-            )
-          : [...existingData.fields, { field_name: fieldName, extracted_value: newValue, confidence: 1 }];
+        if (rowIndex === undefined) {
+          const fieldExists = existingData.headerFields.some((f) => f.field_name === fieldName);
+          const updatedHeaderFields = fieldExists
+            ? existingData.headerFields.map((f) =>
+                f.field_name === fieldName ? { ...f, extracted_value: newValue } : f
+              )
+            : [...existingData.headerFields, { field_name: fieldName, extracted_value: newValue, confidence: 1 }];
+
+          return {
+            ...u,
+            extractedData: {
+              ...existingData,
+              headerFields: updatedHeaderFields,
+            },
+          };
+        } else {
+          const updatedRows = existingData.rows.map((row) => {
+            if (row.row_index !== rowIndex) return row;
+
+            const fieldExists = row.fields.some((f) => f.field_name === fieldName);
+            const updatedFields = fieldExists
+              ? row.fields.map((f) =>
+                  f.field_name === fieldName ? { ...f, extracted_value: newValue } : f
+                )
+              : [...row.fields, { field_name: fieldName, extracted_value: newValue, confidence: 1 }];
+
+            return {
+              ...row,
+              fields: updatedFields,
+            };
+          });
+
+          return {
+            ...u,
+            extractedData: {
+              ...existingData,
+              rows: updatedRows,
+            },
+          };
+        }
+      }),
+    }));
+
+    const upload = get().uploads.find((u) => u.id === uploadId);
+    if (upload?.extractedData) {
+      dbUpdateUpload(uploadId, { extracted_data: upload.extractedData }).catch((error) =>
+        console.error("Failed to update extracted field:", error)
+      );
+    }
+  },
+
+  addExtractedRow: (uploadId: string) => {
+    set((state) => ({
+      uploads: state.uploads.map((u) => {
+        if (u.id !== uploadId) return u;
+
+        const existingData = u.extractedData ?? { headerFields: [], rows: [], totalWorkers: 0 };
+        const newRowIndex = existingData.rows.length;
+
+        const newRow: ExtractedRow = {
+          row_index: newRowIndex,
+          fields: [
+            { field_name: 'worker_name', extracted_value: '', confidence: 0 },
+            { field_name: 'worker_id', extracted_value: '', confidence: 0 },
+            { field_name: 'time_in', extracted_value: '', confidence: 0 },
+            { field_name: 'time_out', extracted_value: '', confidence: 0 },
+          ],
+        };
 
         return {
           ...u,
           extractedData: {
             ...existingData,
-            fields: updatedFields,
+            rows: [...existingData.rows, newRow],
+            totalWorkers: existingData.rows.length + 1,
           },
         };
       }),
@@ -211,7 +283,36 @@ export const useUploadStore = create<UploadState>()((set, get) => ({
     const upload = get().uploads.find((u) => u.id === uploadId);
     if (upload?.extractedData) {
       dbUpdateUpload(uploadId, { extracted_data: upload.extractedData }).catch((error) =>
-        console.error("Failed to update extracted field:", error)
+        console.error("Failed to add extracted row:", error)
+      );
+    }
+  },
+
+  removeExtractedRow: (uploadId: string, rowIndex: number) => {
+    set((state) => ({
+      uploads: state.uploads.map((u) => {
+        if (u.id !== uploadId) return u;
+
+        const existingData = u.extractedData ?? { headerFields: [], rows: [], totalWorkers: 0 };
+        const updatedRows = existingData.rows
+          .filter((row) => row.row_index !== rowIndex)
+          .map((row, idx) => ({ ...row, row_index: idx }));
+
+        return {
+          ...u,
+          extractedData: {
+            ...existingData,
+            rows: updatedRows,
+            totalWorkers: updatedRows.length,
+          },
+        };
+      }),
+    }));
+
+    const upload = get().uploads.find((u) => u.id === uploadId);
+    if (upload?.extractedData) {
+      dbUpdateUpload(uploadId, { extracted_data: upload.extractedData }).catch((error) =>
+        console.error("Failed to remove extracted row:", error)
       );
     }
   },

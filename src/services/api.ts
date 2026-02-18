@@ -6,14 +6,23 @@ export interface ExtractionRequest {
   fieldDefinitions: Array<{ name: string; label: string; type: string }>;
 }
 
+export interface ExtractedRowField {
+  field_name: string;
+  extracted_value: string | null;
+  confidence: number;
+}
+
+export interface ExtractedRow {
+  row_index: number;
+  fields: ExtractedRowField[];
+}
+
 export interface ExtractionResponse {
   success: boolean;
   data?: {
-    fields: Array<{
-      field_name: string;
-      extracted_value: string | null;
-      confidence: number;
-    }>;
+    headerFields: ExtractedRowField[];
+    rows: ExtractedRow[];
+    totalWorkers: number;
     processingTime: number;
     model: string;
   };
@@ -73,7 +82,8 @@ export async function extractFromImage(
 }
 
 export async function appendToSheet(
-  data: Record<string, string>,
+  headerData: Record<string, string>,
+  rows: Array<Record<string, string>>,
   submittedBy: string,
   uploadId: string,
   fileName?: string
@@ -85,7 +95,7 @@ export async function appendToSheet(
   const response = await fetch(`${API_BASE}/api/sheets/append`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data, submittedBy, uploadId, fileName }),
+    body: JSON.stringify({ headerData, rows, submittedBy, uploadId, fileName }),
   });
 
   if (!response.ok) {
