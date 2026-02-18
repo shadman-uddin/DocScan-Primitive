@@ -1,0 +1,10 @@
+name = "docscanextraction"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Environment variables (set these in Cloudflare dashboard or use wrangler secret)
+# ANTHROPIC_API_KEY = "your-api-key-here"
+# ALLOWED_ORIGIN = "http://localhost:5173"
+
+[env.production]
+# ALLOWED_ORIGIN = "https://your-production-domain.com"
