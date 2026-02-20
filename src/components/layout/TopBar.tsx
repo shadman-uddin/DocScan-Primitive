@@ -11,13 +11,15 @@ export default function TopBar() {
     >
       <div className="flex items-center gap-2">
         {theme.logoUrl ? (
-          <img src={theme.logoUrl} alt={appName} className="h-7 w-7 object-contain" />
+          <img src={theme.logoUrl} alt={appName} className="h-8 object-contain" style={{ maxWidth: '200px' }} />
         ) : (
-          <ScanLine className="h-6 w-6 text-white" />
+          <>
+            <ScanLine className="h-6 w-6 text-white" />
+            <span className="text-white font-semibold text-lg tracking-tight">
+              {appName}
+            </span>
+          </>
         )}
-        <span className="text-white font-semibold text-lg tracking-tight">
-          {appName}
-        </span>
       </div>
       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20">
         <User className="h-4 w-4 text-white" />

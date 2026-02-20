@@ -1,6 +1,6 @@
 export const theme = {
   appName: "EIC DocScan",
-  logoUrl: null as string | null,
+  logoUrl: "/Screenshot_2026-02-03_at_11.18.23_AM.png",
   primaryColor: "#1B3A4B",
   primaryLight: "#2E6F8E",
   accentColor: "#F59E0B",

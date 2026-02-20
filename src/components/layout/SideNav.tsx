@@ -16,13 +16,19 @@ export default function SideNav() {
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 bg-white border-r border-slate-200">
       <div
-        className="flex items-center gap-2 px-5 shrink-0"
+        className="flex items-center justify-center gap-2 px-5 shrink-0"
         style={{ height: 56, backgroundColor: theme.primaryColor }}
       >
-        <ScanLine className="h-6 w-6 text-white" />
-        <span className="text-white font-semibold text-lg tracking-tight">
-          {appName}
-        </span>
+        {theme.logoUrl ? (
+          <img src={theme.logoUrl} alt={appName} className="h-8 object-contain" style={{ maxWidth: '220px' }} />
+        ) : (
+          <>
+            <ScanLine className="h-6 w-6 text-white" />
+            <span className="text-white font-semibold text-lg tracking-tight">
+              {appName}
+            </span>
+          </>
+        )}
       </div>
 
       <nav className="flex-1 py-4 px-3 space-y-1">
