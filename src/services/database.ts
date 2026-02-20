@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { deleteFileFromStorage } from './storage';
 import type {
   DatabaseUpload,
@@ -9,6 +9,10 @@ import type {
 export async function insertUpload(
   upload: UploadInsert
 ): Promise<DatabaseUpload> {
+  if (!isSupabaseConfigured) {
+    throw new Error('Database not configured');
+  }
+
   const { data, error } = await supabase
     .from('uploads')
     .insert(upload)
@@ -115,6 +119,10 @@ export async function getTodayStats(): Promise<{
   pending: number;
   approved: number;
 }> {
+  if (!isSupabaseConfigured) {
+    return { total: 0, pending: 0, approved: 0 };
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -138,6 +146,11 @@ export async function getTodayStats(): Promise<{
 }
 
 export async function getAllUploads(): Promise<DatabaseUpload[]> {
+  if (!isSupabaseConfigured) {
+    console.warn('Supabase not configured, returning empty uploads');
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('uploads')
     .select('*')
