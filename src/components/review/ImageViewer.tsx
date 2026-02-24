@@ -138,31 +138,31 @@ export function ImageViewer({ imageUrl, alt = 'Document preview' }: ImageViewerP
         />
       </div>
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-slate-900/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-900/90 backdrop-blur-sm rounded-lg p-1.5 shadow-lg">
         <button
           onClick={handleZoomOut}
-          className="p-2 hover:bg-slate-700 rounded transition-colors"
+          className="p-2.5 hover:bg-slate-700 active:bg-slate-600 rounded transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Zoom out"
         >
           <ZoomOut className="w-5 h-5 text-white" />
         </button>
         <button
           onClick={handleZoomIn}
-          className="p-2 hover:bg-slate-700 rounded transition-colors"
+          className="p-2.5 hover:bg-slate-700 active:bg-slate-600 rounded transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Zoom in"
         >
           <ZoomIn className="w-5 h-5 text-white" />
         </button>
         <button
           onClick={handleRotate}
-          className="p-2 hover:bg-slate-700 rounded transition-colors"
+          className="p-2.5 hover:bg-slate-700 active:bg-slate-600 rounded transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Rotate clockwise"
         >
           <RotateCw className="w-5 h-5 text-white" />
         </button>
         <button
           onClick={handleReset}
-          className="p-2 hover:bg-slate-700 rounded transition-colors"
+          className="p-2.5 hover:bg-slate-700 active:bg-slate-600 rounded transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Reset view"
         >
           <Maximize2 className="w-5 h-5 text-white" />

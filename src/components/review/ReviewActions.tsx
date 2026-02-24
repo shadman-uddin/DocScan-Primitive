@@ -20,7 +20,7 @@ export function ReviewActions({
       <button
         onClick={onReupload}
         disabled={isProcessing}
-        className="flex-[0.4] flex items-center justify-center gap-2 h-12 px-4 bg-white border-2 border-slate-600 text-slate-600 rounded-xl font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="flex-[0.4] flex items-center justify-center gap-2 h-12 px-4 bg-white border-2 border-slate-600 text-slate-600 rounded-xl font-medium hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         <RefreshCw className="w-5 h-5" />
         <span>Re-upload</span>
@@ -30,7 +30,7 @@ export function ReviewActions({
         <button
           onClick={onRetry}
           disabled={isProcessing}
-          className="flex-[0.6] flex items-center justify-center gap-2 h-12 px-4 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex-[0.6] flex items-center justify-center gap-2 h-12 px-4 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 active:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <RotateCcw className="w-5 h-5" />
           <span>Retry</span>
@@ -39,7 +39,7 @@ export function ReviewActions({
         <button
           onClick={onApprove}
           disabled={isProcessing}
-          className="flex-[0.6] flex items-center justify-center gap-2 h-12 px-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex-[0.6] flex items-center justify-center gap-2 h-12 px-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isProcessing ? (
             <>

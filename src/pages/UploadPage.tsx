@@ -189,17 +189,24 @@ export default function UploadPage() {
   return (
     <div className="px-4 py-4 lg:px-8">
       {demoMode && showDemoBanner && (
-        <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-3 mb-4 flex items-center justify-between">
-          <p className="text-sm text-amber-700 font-medium">
-            Demo Mode — Using simulated AI extraction
-          </p>
-          <button
-            onClick={() => setShowDemoBanner(false)}
-            className="text-amber-600 hover:text-amber-800"
-            aria-label="Dismiss banner"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-3 mb-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <p className="text-sm text-amber-700 font-medium mb-1">
+                Demo Mode — Worker Connection Failed
+              </p>
+              <p className="text-xs text-amber-600">
+                Using simulated AI extraction. Check that the worker URL is correct and accessible.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDemoBanner(false)}
+              className="text-amber-600 hover:text-amber-800 flex-shrink-0"
+              aria-label="Dismiss banner"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       )}
 
