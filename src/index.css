@@ -29,7 +29,7 @@
       "Helvetica Neue", Arial, sans-serif;
     line-height: 1.5;
     overflow-x: hidden;
-    overscroll-behavior-y: none;
+    overflow-y: auto;
   }
 
   * {
