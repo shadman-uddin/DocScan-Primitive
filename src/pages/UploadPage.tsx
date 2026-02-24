@@ -125,8 +125,8 @@ export default function UploadPage() {
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         console.error('API extraction failed:', msg, error);
-        extractionResult = generateMockExtraction(fieldDefinitions);
-        setDemoMode(true);
+
+        throw new Error('Worker connection failed. Please verify the Cloudflare Worker is deployed and the VITE_API_URL is correct in your .env file.');
       }
 
       if (intervalRef.current) clearInterval(intervalRef.current);

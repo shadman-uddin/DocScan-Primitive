@@ -107,33 +107,8 @@ export async function processAndExtract(
 }
 
 export function generateMockExtraction(): ExtractionResponse {
-  const mockRows = [
-    { name: 'Amed Borges', id: '1677', timeIn: '6:00', timeOut: null },
-    { name: 'Harrison Rivera', id: '2085', timeIn: '7:00', timeOut: null },
-    { name: 'Luis Rodriguez', id: '2220', timeIn: '7:00', timeOut: null },
-    { name: 'Cristian Ortiz', id: '731', timeIn: '7:00', timeOut: null },
-    { name: 'Eduardo Rosa', id: '1146', timeIn: '7:00', timeOut: null },
-  ];
-
   return {
-    success: true,
-    data: {
-      headerFields: [
-        { field_name: 'foreman_name', extracted_value: 'Amed', confidence: 0.95 },
-        { field_name: 'date', extracted_value: '2026-02-16', confidence: 0.92 },
-      ],
-      rows: mockRows.map((row, idx) => ({
-        row_index: idx,
-        fields: [
-          { field_name: 'worker_name', extracted_value: row.name, confidence: 0.88 },
-          { field_name: 'worker_id', extracted_value: row.id, confidence: 0.90 },
-          { field_name: 'time_in', extracted_value: row.timeIn, confidence: 0.85 },
-          { field_name: 'time_out', extracted_value: row.timeOut, confidence: row.timeOut ? 0.8 : 0 },
-        ],
-      })),
-      totalWorkers: mockRows.length,
-      processingTime: 1200,
-      model: 'mock-model',
-    },
+    success: false,
+    error: 'Worker connection failed. Please check that the Cloudflare Worker is deployed and accessible at the configured URL.',
   };
 }
